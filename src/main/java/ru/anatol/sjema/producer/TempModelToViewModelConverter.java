@@ -25,7 +25,7 @@ import ru.anatol.sjema.producer.model.temp.TempGroupRestriction;
 import ru.anatol.sjema.producer.model.temp.TempIdentifier;
 import ru.anatol.sjema.producer.model.temp.TempModel;
 import ru.anatol.sjema.producer.model.temp.TempType;
-import ru.anatol.sjema.producer.model.temp.TempTypeRestriction;
+import ru.anatol.sjema.producer.model.temp.TempTypeReference;
 import ru.anatol.sjema.producer.standard.StandardViewMapperProducer;
 import ru.anatol.sjema.producer.standard.StandardViewStructureProducer;
 import ru.anatol.sjema.producer.standard.StandardViewWidgetProducer;
@@ -456,25 +456,24 @@ public class TempModelToViewModelConverter {
             }
 
             //TODO simpleType с атрибутами это не простой тип
-            if (tempType.getRestriction() != null && tempType.getRestriction().getBaseId() != null) {
+            if (tempType.getReference() != null && tempType.getReference().getBaseId() != null) {
 
-                TempIdentifier baseId = tempType.getRestriction().getBaseId();
+                TempIdentifier baseId = tempType.getReference().getBaseId();
                 if (isSimpleType(tempType)) {
                     viewContent.getElementIds().addAll(toSimpleTypeElementIds(baseId));
                     baseId = getStandardSimpleBaseId(baseId);
                 }
 
                 if (isSimpleType(tempType) && tempType.getUnion() == null) {
-                    viewType.setRestriction(toViewTypeRestriction(tempType.getRestriction()));
+                    viewType.setRestriction(toViewTypeRestriction(tempType.getReference()));
                     viewType.setBase(getBaseType(baseId));
                     viewType.setBaseIdentifier(baseId);
-                    viewType.setMapperId(getMapperId(tempType.getRestriction().getBaseId()));
+                    viewType.setMapperId(getMapperId(tempType.getReference().getBaseId()));
                     viewType.setWidget(getWidget(baseId));
                 }
 
                 //TODO возможно именно тут EXTENSION и RESTRICTION
                 if (!isSimpleType(tempType)) {
-                    viewType.setRestriction(toViewTypeRestriction(tempType.getRestriction()));
                     switch (tempType.getMode()) {
                         case EXTENSION:
                             //TODO EXTENSION
@@ -486,10 +485,9 @@ public class TempModelToViewModelConverter {
                             LOGGER.debug("TempType is RESTRICTION ({})", tempType.getId());
                             break;
                         default:
-//                        viewType.setRestriction(toViewTypeRestriction(tempType.getRestriction()));
                             viewType.setBase(getBaseType(baseId));
                             viewType.setBaseIdentifier(baseId);
-                            viewType.setMapperId(getMapperId(tempType.getRestriction().getBaseId()));
+                            viewType.setMapperId(getMapperId(tempType.getReference().getBaseId()));
                             viewType.setWidget(getWidget(baseId));
 
                     }
@@ -499,6 +497,10 @@ public class TempModelToViewModelConverter {
 
             if (viewContent.getElementIds() != null && !viewContent.getElementIds().isEmpty()) {
                 viewType.setContent(viewContent);
+            } else {
+                if (!isSimpleType(tempType)) {
+                    LOGGER.debug("viewType {} without content", viewType.getIdentifier());
+                }
             }
 
             return viewType;
@@ -518,10 +520,10 @@ public class TempModelToViewModelConverter {
         if (!isSimpleType(tempType)) {
             throw new ConverterException("baseIs is not simple type");
         }
-        if (tempType.getRestriction() == null || tempType.getRestriction().getBaseId() == null) {
+        if (tempType.getReference() == null || tempType.getReference().getBaseId() == null) {
             return STRING_TYPE_ID;
         }
-        return getStandardSimpleBaseId(tempType.getRestriction().getBaseId());
+        return getStandardSimpleBaseId(tempType.getReference().getBaseId());
     }
 
     private List<String> toSimpleTypeElementIds(TempIdentifier baseId) throws ConverterException, ProducerException {
@@ -544,9 +546,9 @@ public class TempModelToViewModelConverter {
             elementIds.addAll(toElementIds(tempType.getContentId()));
         }
 
-        if (tempType.getRestriction() != null && tempType.getRestriction().getBaseId() != null) {
+        if (tempType.getReference() != null && tempType.getReference().getBaseId() != null) {
             if (isSimpleType(tempType)) {
-                elementIds.addAll(toSimpleTypeElementIds(tempType.getRestriction().getBaseId()));
+                elementIds.addAll(toSimpleTypeElementIds(tempType.getReference().getBaseId()));
             }
         }
 
@@ -563,9 +565,14 @@ public class TempModelToViewModelConverter {
 
         TempType tempType = getTempType(baseId, true);
 
-        if (tempType.getRestriction() != null && tempType.getRestriction().getBaseId() != null) {
+        if (tempType.getReference() != null && tempType.getReference().getBaseId() != null) {
             if (!isSimpleType(tempType)) {
-                elementIds.addAll(toComplexTypeElementIds(tempType.getRestriction().getBaseId()));
+                if (TempType.Mode.EXTENSION.equals(tempType.getMode())) {
+                    elementIds.addAll(toComplexTypeElementIds(tempType.getReference().getBaseId()));
+                }
+                if (TempType.Mode.RESTRICTION.equals(tempType.getMode())) {
+                    LOGGER.debug("RESTRICTION {}", baseId);
+                }
             }
         }
 
@@ -580,23 +587,23 @@ public class TempModelToViewModelConverter {
     /**
      * Преобразование в ViewTypeRestriction
      *
-     * @param tempTypeRestriction TempTypeRestriction
+     * @param tempTypeReference TempTypeRestriction
      * @return ViewTypeRestriction
      */
-    private ViewTypeRestriction toViewTypeRestriction(TempTypeRestriction tempTypeRestriction) throws ConverterException {
-        Objects.requireNonNull(tempTypeRestriction);
-        Objects.requireNonNull(tempTypeRestriction.getBaseId());
+    private ViewTypeRestriction toViewTypeRestriction(TempTypeReference tempTypeReference) throws ConverterException {
+        Objects.requireNonNull(tempTypeReference);
+        Objects.requireNonNull(tempTypeReference.getBaseId());
 
-        final String xsdTypeId = getXsdTypeId(tempTypeRestriction.getBaseId());
+        final String xsdTypeId = getXsdTypeId(tempTypeReference.getBaseId());
 
         ViewTypeRestriction viewTypeRestriction = toBaseTypeRestriction(xsdTypeId);
 
-        if (tempTypeRestriction.getFacets() != null) {
+        if (tempTypeReference.getFacets() != null) {
             if (viewTypeRestriction == null) {
                 viewTypeRestriction = new ViewTypeRestriction();
             }
 
-            Map<String, String> enumeration = tempTypeRestriction.getFacets().getEnumeration();
+            Map<String, String> enumeration = tempTypeReference.getFacets().getEnumeration();
             if (enumeration != null) {
                 viewTypeRestriction.setEnumeration(new HashMap<>());
                 for (Map.Entry<String, String> entry : enumeration.entrySet()) {
@@ -608,19 +615,19 @@ public class TempModelToViewModelConverter {
                 }
             }
 
-            if (tempTypeRestriction.getFacets().getPatterns() != null && !tempTypeRestriction.getFacets().getPatterns().isEmpty()) {
-                viewTypeRestriction.setPatterns(new ArrayList<>(tempTypeRestriction.getFacets().getPatterns().size()));
-                for (TempFacetsPattern pattern : tempTypeRestriction.getFacets().getPatterns()) {
+            if (tempTypeReference.getFacets().getPatterns() != null && !tempTypeReference.getFacets().getPatterns().isEmpty()) {
+                viewTypeRestriction.setPatterns(new ArrayList<>(tempTypeReference.getFacets().getPatterns().size()));
+                for (TempFacetsPattern pattern : tempTypeReference.getFacets().getPatterns()) {
                     viewTypeRestriction.getPatterns().add(toViewTypeRestrictionPattern(pattern));
                 }
             }
 
-            TempFacets.WhiteSpace whiteSpace = tempTypeRestriction.getFacets().getWhiteSpace();
+            TempFacets.WhiteSpace whiteSpace = tempTypeReference.getFacets().getWhiteSpace();
             if (whiteSpace != null) {
                 viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.valueOf(whiteSpace.name()));
             }
 
-            Map<String, String> facets = tempTypeRestriction.getFacets().getFacets();
+            Map<String, String> facets = tempTypeReference.getFacets().getFacets();
             if (facets != null) {
                 for (Map.Entry<String, String> entry : facets.entrySet()) {
                     readRestrictionFacet(viewTypeRestriction, xsdTypeId, entry.getKey(), entry.getValue());
@@ -746,6 +753,14 @@ public class TempModelToViewModelConverter {
                         elementIds.addAll(toSimpleTypeElementIds(tempGroup.getExtensionId()));
                     } else {
                         elementIds.addAll(toComplexTypeElementIds(tempGroup.getExtensionId()));
+                    }
+                }
+                if (tempGroup.getRestriction() != null && tempGroup.getRestriction().getTypeId() != null) {
+                    TempType tempType = getTempType(tempGroup.getRestriction().getTypeId(), true);
+                    if (isSimpleType(tempType)) {
+                        elementIds.addAll(toSimpleTypeElementIds(tempGroup.getRestriction().getTypeId()));
+                    } else {
+                        elementIds.addAll(toComplexTypeElementIds(tempGroup.getRestriction().getTypeId()));
                     }
                 }
                 if (tempGroup.getIds() != null && !tempGroup.getIds().isEmpty()) {

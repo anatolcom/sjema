@@ -52,7 +52,7 @@ import ru.anatol.sjema.producer.model.temp.TempGroupRestriction;
 import ru.anatol.sjema.producer.model.temp.TempIdentifier;
 import ru.anatol.sjema.producer.model.temp.TempModel;
 import ru.anatol.sjema.producer.model.temp.TempType;
-import ru.anatol.sjema.producer.model.temp.TempTypeRestriction;
+import ru.anatol.sjema.producer.model.temp.TempTypeReference;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
@@ -885,18 +885,18 @@ public class XsdSchemaToTempModelConverter {
             tempType.addComment("#Final : " + toString(simpleType.getFinal()));
         }
 
-        tempType.setRestriction(new TempTypeRestriction());
+        tempType.setReference(new TempTypeReference());
         if (simpleType.getRestriction() != null) {
-            tempType.getRestriction().setAnnotation(readAnnotation(simpleType.getRestriction().getAnnotation()));
+            tempType.getReference().setAnnotation(readAnnotation(simpleType.getRestriction().getAnnotation()));
             if (simpleType.getRestriction().getBase() != null) {
-                tempType.getRestriction().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, simpleType.getRestriction().getBase()));
+                tempType.getReference().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, simpleType.getRestriction().getBase()));
             }
             if (simpleType.getRestriction().getSimpleType() != null) {
                 TempType baseType = readSimpleType(model, simpleType.getRestriction().getSimpleType());
-                tempType.getRestriction().setBaseId(model.addType(baseType));
+                tempType.getReference().setBaseId(model.addType(baseType));
             }
             if (simpleType.getRestriction().getFacets() != null && !simpleType.getRestriction().getFacets().isEmpty()) {
-                tempType.getRestriction().setFacets(readFacets(simpleType.getRestriction().getFacets()));
+                tempType.getReference().setFacets(readFacets(simpleType.getRestriction().getFacets()));
             }
         }
 
@@ -1005,9 +1005,9 @@ public class XsdSchemaToTempModelConverter {
         tType.setName("extensionType");
         tType.setAnnotation(readAnnotation(extensionType.getAnnotation()));
 
-        tType.setRestriction(new TempTypeRestriction());
+        tType.setReference(new TempTypeReference());
         if (extensionType.getBase() != null) {
-            tType.getRestriction().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, extensionType.getBase()));
+            tType.getReference().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, extensionType.getBase()));
         }
 
         TempGroup contentGroup = newContentGroup(model, null);
@@ -1065,16 +1065,16 @@ public class XsdSchemaToTempModelConverter {
         tType.setName("restrictionType");
         tType.setAnnotation(readAnnotation(restrictionType.getAnnotation()));
 
-        tType.setRestriction(new TempTypeRestriction());
+        tType.setReference(new TempTypeReference());
         if (restrictionType.getBase() != null) {
-            tType.getRestriction().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, restrictionType.getBase()));
+            tType.getReference().setBaseId(readIdentifier(TempIdentifier.Mode.TYPE_NAME, restrictionType.getBase()));
         }
         if (restrictionType.getSimpleType() != null) {
             TempType baseType = readSimpleType(model, restrictionType.getSimpleType());
-            tType.getRestriction().setBaseId(model.addType(baseType));
+            tType.getReference().setBaseId(model.addType(baseType));
         }
         if (restrictionType.getFacets() != null && !restrictionType.getFacets().isEmpty()) {
-            tType.getRestriction().setFacets(readFacets(restrictionType.getFacets()));
+            tType.getReference().setFacets(readFacets(restrictionType.getFacets()));
         }
 
         TempGroup contentGroup = newContentGroup(model, null);

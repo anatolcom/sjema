@@ -153,19 +153,19 @@ public class TempModelPrinter implements Printer {
             typePrinter.put("annotation", new ArrayPrinter(tempType.getAnnotation()));
         }
 
-        if (tempType.getRestriction() != null) {
+        if (tempType.getReference() != null) {
             ObjectPrinter restrictionPrinter = new ObjectPrinter();
             typePrinter.put("restriction", restrictionPrinter);
-            if (tempType.getRestriction().getBaseId() != null) {
-                restrictionPrinter.put("baseId", toIdentifierPrinter(tempType.getRestriction().getBaseId()));
+            if (tempType.getReference().getBaseId() != null) {
+                restrictionPrinter.put("baseId", toIdentifierPrinter(tempType.getReference().getBaseId()));
             }
-            restrictionPrinter.put("annotation", new ArrayPrinter(tempType.getRestriction().getAnnotation()));
+            restrictionPrinter.put("annotation", new ArrayPrinter(tempType.getReference().getAnnotation()));
 
-            if (tempType.getRestriction().getFacets() != null) {
-                restrictionPrinter.put("facets", toFacetsPrinter(tempType.getRestriction().getFacets()));
+            if (tempType.getReference().getFacets() != null) {
+                restrictionPrinter.put("facets", toFacetsPrinter(tempType.getReference().getFacets()));
             }
 
-            String comment = tempType.getRestriction().getComment();
+            String comment = tempType.getReference().getComment();
             if (comment != null && !comment.isEmpty()) restrictionPrinter.addComment(comment);
         }
 

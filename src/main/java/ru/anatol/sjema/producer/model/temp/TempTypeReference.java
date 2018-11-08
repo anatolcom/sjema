@@ -2,14 +2,14 @@ package ru.anatol.sjema.producer.model.temp;
 
 import java.util.List;
 
-public class TempTypeRestriction extends TempComment {
+public class TempTypeReference extends TempComment {
 
     private TempIdentifier baseId;
     private List<String> annotation;
 
     private TempFacets facets;
 
-    public TempTypeRestriction() {
+    public TempTypeReference() {
     }
 
     public TempIdentifier getBaseId() {

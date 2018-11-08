@@ -18,7 +18,7 @@ public class TempType extends TempComment {
     private String name;
     private List<String> annotation;
     private TempIdentifier contentId;
-    private TempTypeRestriction restriction;
+    private TempTypeReference reference;
     private List<TempIdentifier> union;
 
     public TempType(Mode mode) {
@@ -69,12 +69,12 @@ public class TempType extends TempComment {
         this.contentId = contentId;
     }
 
-    public TempTypeRestriction getRestriction() {
-        return restriction;
+    public TempTypeReference getReference() {
+        return reference;
     }
 
-    public void setRestriction(TempTypeRestriction restriction) {
-        this.restriction = restriction;
+    public void setReference(TempTypeReference reference) {
+        this.reference = reference;
     }
 
     public List<TempIdentifier> getUnion() {
