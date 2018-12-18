@@ -350,11 +350,11 @@ public class TempModelToViewModelConverter {
 
         if (TempElement.Form.QUALIFIED.equals(form)) {
             String prefix = namespaces.getPrefix(namespace);
-            if (prefix != null) {
-                pathBuilder.append(prefix).append(":");
-            } else {
-                namespaces.addNamespace(nsNumerator.getNumbered("ns"), namespace);
+            if (prefix == null) {
+                prefix = nsNumerator.getNumbered("ns");
+                namespaces.addNamespace(prefix, namespace);
             }
+            pathBuilder.append(prefix).append(":");
         }
         pathBuilder.append(name);
         return pathBuilder.toString();

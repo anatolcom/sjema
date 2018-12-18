@@ -1,7 +1,6 @@
 package ru.anatol.sjema.readers;
 
 import org.w3._2001.xmlschema.Schema;
-import ru.anatol.sjema.printer.XsdAttachmentUnmarshaller;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -20,7 +19,6 @@ public class XsdSchemaReader {
 
             JAXBContext context = JAXBContext.newInstance(Schema.class);
             Unmarshaller um = context.createUnmarshaller();
-            um.setAttachmentUnmarshaller(new XsdAttachmentUnmarshaller());
             return (Schema) um.unmarshal(xmlReader);
 
         } catch (JAXBException | XMLStreamException ex) {
