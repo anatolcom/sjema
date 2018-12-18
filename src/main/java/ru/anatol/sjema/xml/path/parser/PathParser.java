@@ -1,5 +1,8 @@
 package ru.anatol.sjema.xml.path.parser;
 
+import ru.anatol.sjema.xml.Namespaces;
+import ru.anatol.sjema.xml.path.PathConst;
+import ru.anatol.sjema.xml.path.XPath;
 import ru.anatol.sjema.xml.path.constant.Constant;
 import ru.anatol.sjema.xml.path.constant.ConstantInteger;
 import ru.anatol.sjema.xml.path.constant.ConstantNodeName;
@@ -12,9 +15,6 @@ import ru.anatol.sjema.xml.path.operation.Path;
 import ru.anatol.sjema.xml.path.operator.Operator;
 import ru.anatol.sjema.xml.path.operator.OperatorEquals;
 import ru.anatol.sjema.xml.path.step.Axis;
-import ru.anatol.sjema.xml.Namespaces;
-import ru.anatol.sjema.xml.path.PathConst;
-import ru.anatol.sjema.xml.path.XPath;
 import ru.anatol.sjema.xml.path.step.StepContext;
 import ru.anatol.sjema.xml.path.step.StepRoot;
 
@@ -98,11 +98,11 @@ public class PathParser {
         while (cursor.hasRead()) {
             char c = cursor.readChar();
             //название должно начинаться с буквы
-            if (str.length() == 0 && !Character.isAlphabetic(c)) {
+            if (str.length() == 0 && !isNameStartChar(c)) {
                 break;
             }
             //либо буква, либо цифра
-            if (!Character.isAlphabetic(c) && !Character.isDigit(c)) {
+            if (!isNameChar(c)) {
                 break;
             }
             str.append(c);
@@ -116,6 +116,49 @@ public class PathParser {
         }
         return str.toString();
     }
+
+    /**
+     * Определение допустимости для первого символа имени.
+     * https://www.w3.org/TR/REC-xml/#NT-Name
+     * NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+     *
+     * @param c символ
+     * @return допустимость
+     */
+    private boolean isNameStartChar(char c) {
+        if (Character.isAlphabetic(c)) {
+            return true;
+        }
+        if ('_' == c) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Определение допустимости для символа имени.
+     * https://www.w3.org/TR/REC-xml/#NT-Name
+     * NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
+     *
+     * @param c символ
+     * @return допустимость
+     */
+    private boolean isNameChar(char c) {
+        if (isNameStartChar(c)) {
+            return true;
+        }
+        if ('-' == c) {
+            return true;
+        }
+        if ('.' == c) {
+            return true;
+        }
+        if (Character.isDigit(c)) {
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * Вычитывание беззнакового целого числа.

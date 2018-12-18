@@ -64,6 +64,7 @@ public class ConverterTest {
         List<String> paths = new ArrayList<>();
         paths.add("/ns:parent/ns:child[1]/ns:item[../ns:id[./@mode='Key']='Test']/ns:value");
         paths.add("/ns:parent/self::node()[@Code='1'][@Name='Действует']");
+        paths.add("/ns:parent_1/ns:test_2");
         paths.add("@Code");
 
 
