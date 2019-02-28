@@ -179,6 +179,8 @@ public final class XsdConst {
     public static final String LANGUAGE_TYPE_ID = "language";
 
     public static final String ID_TYPE_ID = "ID";
+
+    public static final String NAME_TYPE_ID = "Name";
     public static final String NC_NAME_TYPE_ID = "NCName";
 
 
@@ -250,6 +252,7 @@ public final class XsdConst {
 
         set.add(ID_TYPE_ID);
 
+        set.add(NAME_TYPE_ID);
         set.add(NC_NAME_TYPE_ID);
 
         return set;
