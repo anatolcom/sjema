@@ -9,13 +9,11 @@ class NameLayer {
     private Map<String, IdLayer> map = new HashMap<>();
 
     public IdLayer getIdLayer(String name) {
-        //TODO нужно ли учитывать регистр ???
-        return map.get(name.toLowerCase());
+        return map.get(name);
     }
 
     public void regIdLayer(String name, IdLayer idLayer) {
-        //TODO нужно ли учитывать регистр ???
-        map.put(name.toLowerCase(), idLayer);
+        map.put(name, idLayer);
     }
 
     public Set<String> getNameSet() {
