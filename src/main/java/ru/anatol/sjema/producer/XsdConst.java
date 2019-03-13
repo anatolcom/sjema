@@ -140,7 +140,7 @@ public final class XsdConst {
     /**
      * Дата.
      */
-    public static String DATE_TYPE_ID = "date";
+    public static final String DATE_TYPE_ID = "date";
     /**
      * Дата и время.
      */

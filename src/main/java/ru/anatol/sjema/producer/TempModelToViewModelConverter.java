@@ -477,12 +477,12 @@ public class TempModelToViewModelConverter {
                     switch (tempType.getMode()) {
                         case EXTENSION:
                             //TODO EXTENSION
-                            LOGGER.debug("TempType is EXTENSION ({})", tempType.getId());
+                            LOGGER.debug("TempType is COMPLEX EXTENSION ({})", tempType.getId());
                             viewContent.getElementIds().addAll(toComplexTypeElementIds(baseId));
                             break;
                         case RESTRICTION:
                             //TODO RESTRICTION
-                            LOGGER.debug("TempType is RESTRICTION ({})", tempType.getId());
+                            LOGGER.debug("TempType is COMPLEX RESTRICTION ({})", tempType.getId());
                             break;
                         default:
                             viewType.setBase(getBaseType(baseId));
@@ -594,9 +594,16 @@ public class TempModelToViewModelConverter {
         Objects.requireNonNull(tempTypeReference);
         Objects.requireNonNull(tempTypeReference.getBaseId());
 
+        final TempType tempType = getTempType(tempTypeReference.getBaseId(), false);
         final String xsdTypeId = getXsdTypeId(tempTypeReference.getBaseId());
-
-        ViewTypeRestriction viewTypeRestriction = toBaseTypeRestriction(xsdTypeId);
+        ViewTypeRestriction viewTypeRestriction = null;
+        if (tempType != null) {
+            if (tempType.getReference() != null && tempType.getReference().getBaseId() != null) {
+                viewTypeRestriction = toViewTypeRestriction(tempType.getReference());
+            }
+        } else {
+            viewTypeRestriction = toBaseTypeRestriction(xsdTypeId);
+        }
 
         if (tempTypeReference.getFacets() != null) {
             if (viewTypeRestriction == null) {
@@ -616,7 +623,9 @@ public class TempModelToViewModelConverter {
             }
 
             if (tempTypeReference.getFacets().getPatterns() != null && !tempTypeReference.getFacets().getPatterns().isEmpty()) {
-                viewTypeRestriction.setPatterns(new ArrayList<>(tempTypeReference.getFacets().getPatterns().size()));
+                if (viewTypeRestriction.getPatterns() == null) {
+                    viewTypeRestriction.setPatterns(new ArrayList<>(tempTypeReference.getFacets().getPatterns().size()));
+                }
                 for (TempFacetsPattern pattern : tempTypeReference.getFacets().getPatterns()) {
                     viewTypeRestriction.getPatterns().add(toViewTypeRestrictionPattern(pattern));
                 }
@@ -1273,20 +1282,20 @@ public class TempModelToViewModelConverter {
         return tempIdentifier;
     }
 
-    private ViewTypeRestriction toBaseTypeRestriction(String sxdTypeId) {
+    private ViewTypeRestriction toBaseTypeRestriction(String xsdTypeId) {
 
-        if (XsdConst.BASE_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.BASE_TYPE_ID.equals(xsdTypeId)) {
             return null;
         }
 
-        if (XsdConst.BOOLEAN_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.BOOLEAN_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
             new ViewTypeRestriction().setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(BOOLEAN_PATTERN);
             return viewTypeRestriction;
         }
 
-        if (XsdConst.BYTE_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.BYTE_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1295,7 +1304,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.SHORT_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.SHORT_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1304,7 +1313,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.INT_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.INT_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1313,7 +1322,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.LONG_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.LONG_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1323,7 +1332,7 @@ public class TempModelToViewModelConverter {
             return viewTypeRestriction;
         }
 
-        if (XsdConst.UNSIGNED_BYTE_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.UNSIGNED_BYTE_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(UNSIGNED_NUMBER_PATTERN);
@@ -1332,7 +1341,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.UNSIGNED_SHORT_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.UNSIGNED_SHORT_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(UNSIGNED_NUMBER_PATTERN);
@@ -1341,7 +1350,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.UNSIGNED_INT_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.UNSIGNED_INT_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(UNSIGNED_NUMBER_PATTERN);
@@ -1350,7 +1359,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.UNSIGNED_LONG_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.UNSIGNED_LONG_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(UNSIGNED_NUMBER_PATTERN);
@@ -1360,7 +1369,7 @@ public class TempModelToViewModelConverter {
             return viewTypeRestriction;
         }
 
-        if (XsdConst.INTEGER_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.INTEGER_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1369,7 +1378,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.POSITIVE_INTEGER_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.POSITIVE_INTEGER_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1378,7 +1387,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.NEGATIVE_INTEGER_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.NEGATIVE_INTEGER_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1387,7 +1396,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.NON_NEGATIVE_INTEGER_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.NON_NEGATIVE_INTEGER_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);
@@ -1396,7 +1405,7 @@ public class TempModelToViewModelConverter {
             viewTypeRestriction.setFractionDigits(0);
             return viewTypeRestriction;
         }
-        if (XsdConst.NON_POSITIVE_INTEGER_TYPE_ID.equals(sxdTypeId)) {
+        if (XsdConst.NON_POSITIVE_INTEGER_TYPE_ID.equals(xsdTypeId)) {
             ViewTypeRestriction viewTypeRestriction = new ViewTypeRestriction();
 //            viewTypeRestriction.setWhiteSpace(ViewTypeRestriction.WhiteSpace.COLLAPSE);
 //            viewTypeRestriction.setPattern(NUMBER_PATTERN);

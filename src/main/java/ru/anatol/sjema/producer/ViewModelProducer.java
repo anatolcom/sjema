@@ -53,7 +53,7 @@ public class ViewModelProducer {
         return viewModel;
     }
 
-    public ViewModel produceViewModel(XsdSchemaResolver xsdSchemaResolver, String schemaLocation) throws ProducerException {
+    private ViewModel produceViewModel(XsdSchemaResolver xsdSchemaResolver, String schemaLocation) throws ProducerException {
         try {
             final TempModel tempModel = new XsdSchemaToTempModelConverter().convert(xsdSchemaResolver, schemaLocation);
 
@@ -67,13 +67,14 @@ public class ViewModelProducer {
         }
     }
 
-    public void validateViewModel(ViewModel viewModel) throws ProducerException {
+    private void validateViewModel(ViewModel viewModel) throws ProducerException {
         try {
             ViewModelValidator.validate(viewModel);
         } catch (ValidatorException ex) {
             try {
                 LOGGER.debug(new ViewModelPrinter(viewModel).print());
             } catch (Exception ignore) {
+                //ignore
             }
             throw new ProducerException(ex);
         }
