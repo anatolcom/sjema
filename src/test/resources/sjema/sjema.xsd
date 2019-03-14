@@ -13,7 +13,7 @@
             <xs:sequence>
                 <xs:element name="info" type="xs:string"/>
                 <xs:element name="restriction" type="tns:simpleRestriction1"/>
-                <xs:element name="dateTime" type="tns:dateTimeType"/>
+                <xs:element name="dateTime" type="tns:dateTime1Type"/>
             </xs:sequence>
             <xs:attribute name="Id" type="xs:ID"/>
         </xs:complexType>
@@ -50,9 +50,15 @@
             <xs:pattern value="[125]{1}\d{12}"/>
         </xs:restriction>
     </xs:simpleType>
-    <xs:simpleType name="dateTimeType">
+    <xs:simpleType name="dateTime1Type">
         <xs:annotation>
-            <xs:documentation>Дата и время</xs:documentation>
+            <xs:documentation>Дата и время 1</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="tns:dateTime2Type"/>
+    </xs:simpleType>
+    <xs:simpleType name="dateTime2Type">
+        <xs:annotation>
+            <xs:documentation>Дата и время 2</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:dateTime"/>
     </xs:simpleType>

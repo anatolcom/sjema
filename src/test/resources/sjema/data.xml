@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <ns:sjema xmlns:ns="urn://sjema" id="sjema">
     <ns:info>info</ns:info>
+    <ns:dateTime>2012-01-01T01:01:01.000+04:00</ns:dateTime>
 </ns:sjema>

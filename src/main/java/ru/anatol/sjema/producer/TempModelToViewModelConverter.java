@@ -275,7 +275,7 @@ public class TempModelToViewModelConverter {
             ViewElement viewElement = new ViewElement();
             viewElement.setIdentifier(tempElement.getId());
             if (tempElement.getTypeId() != null) {
-                viewElement.setTypeId(idManager.getId(processTypeId(tempElement.getTypeId())));
+                viewElement.setTypeId(idManager.getId(processXsdTypeId(tempElement.getTypeId())));
                 viewElement.setTypeIdentifier(tempElement.getTypeId());
             }
 
@@ -468,7 +468,7 @@ public class TempModelToViewModelConverter {
                     viewType.setRestriction(toViewTypeRestriction(tempType.getReference()));
                     viewType.setBase(getBaseType(baseId));
                     viewType.setBaseIdentifier(baseId);
-                    viewType.setMapperId(getMapperId(tempType.getReference().getBaseId()));
+                    viewType.setMapperId(getMapperId(baseId));
                     viewType.setWidget(getWidget(baseId));
                 }
 
@@ -487,9 +487,8 @@ public class TempModelToViewModelConverter {
                         default:
                             viewType.setBase(getBaseType(baseId));
                             viewType.setBaseIdentifier(baseId);
-                            viewType.setMapperId(getMapperId(tempType.getReference().getBaseId()));
+                            viewType.setMapperId(getMapperId(baseId));
                             viewType.setWidget(getWidget(baseId));
-
                     }
                 }
             }
@@ -526,15 +525,15 @@ public class TempModelToViewModelConverter {
         return getStandardSimpleBaseId(tempType.getReference().getBaseId());
     }
 
-    private List<String> toSimpleTypeElementIds(TempIdentifier baseId) throws ConverterException, ProducerException {
+    private List<String> toSimpleTypeElementIds(TempIdentifier typeIdentifier) throws ConverterException, ProducerException {
 
         List<String> elementIds = new ArrayList<>();
 
-        if (XsdConst.URI.equals(baseId.getNamespace())
-                && (XsdConst.BASE_TYPE_ID.equals(baseId.getName()) || XsdConst.typeIdSet.contains(baseId.getName()))) {
+        if (XsdConst.URI.equals(typeIdentifier.getNamespace())
+                && (XsdConst.BASE_TYPE_ID.equals(typeIdentifier.getName()) || XsdConst.typeIdSet.contains(typeIdentifier.getName()))) {
             return elementIds;
         }
-        TempType tempType = getTempType(baseId, true);
+        TempType tempType = getTempType(typeIdentifier, true);
 
         //если простой тип - UNION
         if (isSimpleType(tempType) && tempType.getUnion() != null) {
@@ -555,24 +554,22 @@ public class TempModelToViewModelConverter {
         return elementIds;
     }
 
-    private List<String> toComplexTypeElementIds(TempIdentifier baseId) throws ConverterException, ProducerException {
+    private List<String> toComplexTypeElementIds(TempIdentifier typeIdentifier) throws ConverterException, ProducerException {
 
         List<String> elementIds = new ArrayList<>();
 
-        if (baseId == null) {
+        if (typeIdentifier == null) {
             return elementIds;
         }
 
-        TempType tempType = getTempType(baseId, true);
+        TempType tempType = getTempType(typeIdentifier, true);
 
         if (tempType.getReference() != null && tempType.getReference().getBaseId() != null) {
-            if (!isSimpleType(tempType)) {
-                if (TempType.Mode.EXTENSION.equals(tempType.getMode())) {
-                    elementIds.addAll(toComplexTypeElementIds(tempType.getReference().getBaseId()));
-                }
-                if (TempType.Mode.RESTRICTION.equals(tempType.getMode())) {
-                    LOGGER.debug("RESTRICTION {}", baseId);
-                }
+            if (TempType.Mode.EXTENSION.equals(tempType.getMode())) {
+                elementIds.addAll(toComplexTypeElementIds(tempType.getReference().getBaseId()));
+            }
+            if (TempType.Mode.RESTRICTION.equals(tempType.getMode())) {
+                LOGGER.debug("RESTRICTION {}", typeIdentifier);
             }
         }
 
@@ -846,7 +843,7 @@ public class TempModelToViewModelConverter {
         int index = 0;
         for (TempIdentifier unionItemTypeIdentifier : parentTempType.getUnion()) {
             index++;
-            final TempIdentifier variantTypeIdentifier = processTypeId(unionItemTypeIdentifier);
+            final TempIdentifier variantTypeIdentifier = processXsdTypeId(unionItemTypeIdentifier);
 
             final String name = parentElementId + UNION_VARIANT;
             final String namespace = parentTempType.getNameId().getNamespace();
@@ -1182,19 +1179,16 @@ public class TempModelToViewModelConverter {
     }
 
     /**
-     * Преобразование ссылок стандартых типов в
+     * Преобразование ссылок стандартых типов в типы
      *
      * @param typeId
      * @return
      * @throws ConverterException
      */
-    private TempIdentifier processTypeId(TempIdentifier typeId) throws ConverterException, ProducerException {
+    private TempIdentifier processXsdTypeId(TempIdentifier typeId) throws ConverterException, ProducerException {
         Objects.requireNonNull(typeId);
         final String xsdTypeId = getXsdTypeId(typeId);
-        if (XsdConst.BASE_TYPE_ID.equals(xsdTypeId)) {
-            return getBaseTypeId(typeId);
-        }
-        if (XsdConst.typeIdSet.contains(xsdTypeId)) {
+        if (XsdConst.BASE_TYPE_ID.equals(xsdTypeId) || XsdConst.typeIdSet.contains(xsdTypeId)) {
             return getBaseTypeId(typeId);
         }
         return typeId;
