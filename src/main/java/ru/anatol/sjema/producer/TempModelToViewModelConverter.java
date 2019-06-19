@@ -675,45 +675,21 @@ public class TempModelToViewModelConverter {
                 case "minInclusive":
                     if (XsdConst.isNumberTypeId(typeId)) {
                         viewTypeRestriction.setMinInclusive(parseNumberAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMinInclusive(parseDateTimeAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTypeId(typeId)) {
-//                        viewTypeRestriction.setMinInclusive(parseDateAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMinInclusive(parseTimeAndTruncatedToLong(facetValue));
                     }
                     break;
                 case "maxInclusive":
                     if (XsdConst.isNumberTypeId(typeId)) {
                         viewTypeRestriction.setMaxInclusive(parseNumberAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxInclusive(parseDateTimeAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxInclusive(parseDateAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxInclusive(parseTimeAndTruncatedToLong(facetValue));
                     }
                     break;
                 case "minExclusive":
                     if (XsdConst.isNumberTypeId(typeId)) {
                         viewTypeRestriction.setMinExclusive(parseNumberAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMinExclusive(parseDateTimeAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTypeId(typeId)) {
-//                        viewTypeRestriction.setMinExclusive(parseDateAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMinExclusive(parseTimeAndTruncatedToLong(facetValue));
                     }
                     break;
                 case "maxExclusive":
                     if (XsdConst.isNumberTypeId(typeId)) {
                         viewTypeRestriction.setMaxExclusive(parseNumberAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxExclusive(parseDateTimeAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isDateTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxExclusive(parseDateAndTruncatedToLong(facetValue));
-//                    } else if (XsdConst.isTimeTypeId(typeId)) {
-//                        viewTypeRestriction.setMaxExclusive(parseTimeAndTruncatedToLong(facetValue));
                     }
                     break;
                 case "totalDigits":
@@ -1451,23 +1427,5 @@ public class TempModelToViewModelConverter {
             value = max;
         }
         return value.longValue();
-    }
-
-    private static long parseDateTimeAndTruncatedToLong(String string) throws ParseException {
-        Objects.requireNonNull(string);
-        final SimpleDateFormat format = new SimpleDateFormat(XsdConst.DATE_TIME_FORMAT);
-        return format.parse(string).getTime();
-    }
-
-    private static long parseDateAndTruncatedToLong(String string) throws ParseException {
-        Objects.requireNonNull(string);
-        final SimpleDateFormat format = new SimpleDateFormat(XsdConst.DATE_FORMAT);
-        return format.parse(string).getTime();
-    }
-
-    private static long parseTimeAndTruncatedToLong(String string) throws ParseException {
-        Objects.requireNonNull(string);
-        final SimpleDateFormat format = new SimpleDateFormat(XsdConst.TIME_FORMAT);
-        return format.parse(string).getTime();
     }
 }

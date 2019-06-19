@@ -173,25 +173,26 @@ public final class XsdConst {
      * Бинарные данные в шеснадцатиричном формате.
      */
     public static final String HEX_BINARY_TYPE_ID = "hexBinary";
-
-    public static final String NORMALIZED_STRING_ID = "normalizedString";
-    public static final String TOKEN_TYPE_ID = "token";
-    public static final String LANGUAGE_TYPE_ID = "language";
-
-    public static final String ID_TYPE_ID = "ID";
-
-    public static final String NAME_TYPE_ID = "Name";
-    public static final String NC_NAME_TYPE_ID = "NCName";
-
-
     /**
      * Бинарные данные в формате Base64.
      */
     public static final String BASE_64_BINARY_TYPE_ID = "base64Binary";
 
-    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssXXX";
-    public static final String DATE_FORMAT = "yyyy-MM-dd";
-    public static final String TIME_FORMAT = "HH:mm:ssXXX";
+    public static final String NORMALIZED_STRING_ID = "normalizedString";
+    public static final String TOKEN_TYPE_ID = "token";
+    public static final String LANGUAGE_TYPE_ID = "language";
+    public static final String NAME_TYPE_ID = "Name";
+    public static final String NC_NAME_TYPE_ID = "NCName";
+    public static final String Q_NAME_TYPE_ID = "QName";
+    public static final String NOTATION_TYPE_ID = "NOTATION";
+    public static final String ID_TYPE_ID = "ID";
+    public static final String IDREF_TYPE_ID = "IDREF";
+    public static final String IDREFS_TYPE_ID = "IDREFS";
+    public static final String ENTITY_TYPE_ID = "ENTITY";
+    public static final String ENTITIES_TYPE_ID = "ENTITIES";
+    public static final String NMTOKEN_TYPE_ID = "NMTOKEN";
+    public static final String NMTOKENS_TYPE_ID = "NMTOKENS";
+
 
     public static final Set<String> typeIdSet;
     public static final Set<String> numberTypeIdSet;
@@ -249,11 +250,29 @@ public final class XsdConst {
         set.add(NORMALIZED_STRING_ID);
         set.add(TOKEN_TYPE_ID);
         set.add(LANGUAGE_TYPE_ID);
-
-        set.add(ID_TYPE_ID);
-
         set.add(NAME_TYPE_ID);
         set.add(NC_NAME_TYPE_ID);
+        set.add(Q_NAME_TYPE_ID);
+        set.add(NOTATION_TYPE_ID);
+        set.add(ID_TYPE_ID);
+        set.add(IDREF_TYPE_ID);
+        set.add(IDREFS_TYPE_ID);
+        set.add(ENTITY_TYPE_ID);
+        set.add(ENTITIES_TYPE_ID);
+        set.add(NMTOKEN_TYPE_ID);
+        set.add(NMTOKENS_TYPE_ID);
+
+        set.add("formChoice");
+        set.add("reducedDerivationControl");
+        set.add("derivationSet");
+        set.add("typeDerivationControl");
+        set.add("fullDerivationSet");
+        set.add("allNNI");
+        set.add("blockSet");
+        set.add("namespaceList");
+        set.add("public");
+        set.add("derivationControl");
+        set.add("simpleDerivationSet");
 
         return set;
     }
