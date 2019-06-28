@@ -4,8 +4,10 @@ import ru.anatol.sjema.producer.model.temp.TempElement;
 import ru.anatol.sjema.producer.model.temp.TempFacets;
 import ru.anatol.sjema.producer.model.temp.TempFacetsPattern;
 import ru.anatol.sjema.producer.model.temp.TempGroup;
+import ru.anatol.sjema.producer.model.temp.TempGroupAny;
 import ru.anatol.sjema.producer.model.temp.TempIdentifier;
 import ru.anatol.sjema.producer.model.temp.TempModel;
+import ru.anatol.sjema.producer.model.temp.TempSchema;
 import ru.anatol.sjema.producer.model.temp.TempType;
 
 import java.io.ByteArrayOutputStream;
@@ -35,15 +37,27 @@ public class TempModelPrinter implements Printer {
     //---------------------------------------------------------------------------
 
     public void print(PrintStream printStream, int indent) {
-        ObjectPrinter tempModelModel = new ObjectPrinter();
-        tempModelModel.put("version", tempModel.getVersion());
+        ObjectPrinter modelPrinter = new ObjectPrinter();
+        modelPrinter.put("version", tempModel.getVersion());
 
-        tempModelModel.put("attributeFormDefault", tempModel.getAttributeFormDefault().name());
-        tempModelModel.put("elementFormDefault", tempModel.getElementFormDefault().name());
+        if (tempModel.getAnnotation() != null && !tempModel.getAnnotation().isEmpty()) {
+            modelPrinter.put("annotation", new ArrayPrinter(tempModel.getAnnotation()));
+        }
+
+        modelPrinter.put("attributeFormDefault", tempModel.getAttributeFormDefault().name());
+        modelPrinter.put("elementFormDefault", tempModel.getElementFormDefault().name());
+
+        if (tempModel.getSchemas() != null) {
+            ArrayPrinter importsPrinter = new ArrayPrinter();
+            modelPrinter.put("schemas", importsPrinter);
+            for (TempSchema tempSchema : tempModel.getSchemas()) {
+                importsPrinter.put(toSchemaPrinter(tempSchema));
+            }
+        }
 
         if (tempModel.getElementSet() != null) {
             ArrayPrinter elementsPrinter = new ArrayPrinter();
-            tempModelModel.put("elements", elementsPrinter);
+            modelPrinter.put("elements", elementsPrinter);
             for (TempElement tempElement : tempModel.getElementSet()) {
                 elementsPrinter.put(toElementPrinter(tempElement));
             }
@@ -51,7 +65,7 @@ public class TempModelPrinter implements Printer {
 
         if (tempModel.getTypeSet() != null) {
             ArrayPrinter typesPrinter = new ArrayPrinter();
-            tempModelModel.put("types", typesPrinter);
+            modelPrinter.put("types", typesPrinter);
             for (TempType tempType : tempModel.getTypeSet()) {
                 typesPrinter.put(toTypePrinter(tempType));
             }
@@ -59,7 +73,7 @@ public class TempModelPrinter implements Printer {
 
         if (tempModel.getGroupSet() != null) {
             ArrayPrinter groupsPrinter = new ArrayPrinter();
-            tempModelModel.put("groups", groupsPrinter);
+            modelPrinter.put("groups", groupsPrinter);
             for (TempGroup tempGroup : tempModel.getGroupSet()) {
                 groupsPrinter.put(toGroupPrinter(tempGroup));
             }
@@ -67,10 +81,27 @@ public class TempModelPrinter implements Printer {
 
         String comment = tempModel.getComment();
         if (comment != null && !comment.isEmpty()) {
-            tempModelModel.addComment(comment);
+            modelPrinter.addComment(comment);
         }
 
-        tempModelModel.print(printStream, indent);
+        modelPrinter.print(printStream, indent);
+    }
+
+    //---------------------------------------------------------------------------
+
+    private Printer toSchemaPrinter(TempSchema tempSchema) {
+
+        ObjectPrinter schemaPrinter = new ObjectPrinter();
+
+        schemaPrinter.put("name", tempSchema.getName());
+
+        schemaPrinter.put("hash", tempSchema.getHash());
+
+        schemaPrinter.put("mode", tempSchema.getMode().name());
+
+        schemaPrinter.put("targetNamespace", tempSchema.getTargetNamespace());
+
+        return schemaPrinter;
     }
 
     //---------------------------------------------------------------------------
@@ -267,18 +298,26 @@ public class TempModelPrinter implements Printer {
             groupPrinter.put("extensionId", toIdentifierPrinter(tempGroup.getExtensionId()));
         }
 
+        if (tempGroup.getAny() != null) {
+            groupPrinter.put("any", toAnyPrinter(tempGroup.getAny()));
+        }
+
         if (tempGroup.getRestriction() != null) {
             ObjectPrinter restrictionPrinter = new ObjectPrinter();
             groupPrinter.put("restriction", restrictionPrinter);
             if (tempGroup.getRestriction().getTypeId() != null) {
                 restrictionPrinter.put("typeId", toIdentifierPrinter(tempGroup.getRestriction().getTypeId()));
             }
+            restrictionPrinter.put("minOccurs", tempGroup.getRestriction().getMinOccurs());
+            restrictionPrinter.put("maxOccurs", tempGroup.getRestriction().getMaxOccurs());
         }
 
-        ArrayPrinter idsPrinter = new ArrayPrinter();
-        groupPrinter.put("ids", idsPrinter);
-        for (TempIdentifier tempIdentifier : tempGroup.getIds()) {
-            idsPrinter.put(toIdentifierPrinter(tempIdentifier));
+        if (tempGroup.getIds() != null && !tempGroup.getIds().isEmpty()) {
+            ArrayPrinter idsPrinter = new ArrayPrinter();
+            groupPrinter.put("ids", idsPrinter);
+            for (TempIdentifier tempIdentifier : tempGroup.getIds()) {
+                idsPrinter.put(toIdentifierPrinter(tempIdentifier));
+            }
         }
 
         String comment = tempGroup.getComment();
@@ -299,6 +338,18 @@ public class TempModelPrinter implements Printer {
 //        return pIdentifier;
 
         return new StringPrinter(tempIdentifier.getMode().name() + " " + tempIdentifier.getNamespace() + " " + tempIdentifier.getName());
+    }
+
+    //---------------------------------------------------------------------------
+
+    private Printer toAnyPrinter(TempGroupAny tempGroupAny) {
+
+        ObjectPrinter anyPrinter = new ObjectPrinter();
+        anyPrinter.put("processContents", tempGroupAny.getProcessContents());
+        if (tempGroupAny.getNamespaces() != null && !tempGroupAny.getNamespaces().isEmpty()) {
+            anyPrinter.put("namespaces", new ArrayPrinter(tempGroupAny.getNamespaces()));
+        }
+        return anyPrinter;
     }
 
     //---------------------------------------------------------------------------

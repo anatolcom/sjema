@@ -16,7 +16,9 @@ public class TempGroup extends TempComment {
         NAMED_ATTRIBUTE_GROUP,
         CONTENT,
         SIMPLE_CONTENT,
-        COMPLEX_CONTENT
+        COMPLEX_CONTENT,
+        ANY,
+        ANY_ATTRIBUTES
     }
 
     private final Mode mode;
@@ -28,6 +30,7 @@ public class TempGroup extends TempComment {
     private TempIdentifier extensionId;
     private TempGroupRestriction restriction;
     private List<TempIdentifier> ids;
+    private TempGroupAny any;
 
     public TempGroup(Mode mode) {
         this.mode = mode;
@@ -102,5 +105,13 @@ public class TempGroup extends TempComment {
 
     public void setIds(List<TempIdentifier> ids) {
         this.ids = ids;
+    }
+
+    public TempGroupAny getAny() {
+        return any;
+    }
+
+    public void setAny(TempGroupAny any) {
+        this.any = any;
     }
 }

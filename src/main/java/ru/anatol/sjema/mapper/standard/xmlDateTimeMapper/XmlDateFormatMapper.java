@@ -5,6 +5,7 @@ import ru.anatol.sjema.mapper.Mapper;
 import ru.anatol.sjema.mapper.MapperException;
 
 import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import java.util.Calendar;
@@ -51,7 +52,11 @@ public class XmlDateFormatMapper implements Mapper {
 
     public XmlDateFormatMapper(Mode mode) {
         this.mode = mode;
-        this.timeZone = TimeZone.getDefault();
+        if (Mode.DATE.equals(mode)) {
+            this.timeZone = null;
+        } else {
+            this.timeZone = TimeZone.getDefault();
+        }
     }
 
     public XmlDateFormatMapper(Mode mode, int timeZoneRawOffset) {
@@ -85,6 +90,9 @@ public class XmlDateFormatMapper implements Mapper {
     }
 
     private int getTimezone() {
+        if (timeZone == null) {
+            return DatatypeConstants.FIELD_UNDEFINED;
+        }
         return timeZone.getRawOffset() / 1000 / 60;
     }
 
@@ -102,23 +110,28 @@ public class XmlDateFormatMapper implements Mapper {
     }
 
     private XMLGregorianCalendar getXMLGregorianCalendarDate(Long millis) throws DatatypeConfigurationException {
-        final GregorianCalendar calendar = new GregorianCalendar(timeZone);
-        calendar.setTimeInMillis(millis);
+        final GregorianCalendar calendar = createGregorianCalendar(millis);
         return DatatypeFactory.newInstance().newXMLGregorianCalendarDate(calendar.get(YEAR), calendar.get(MONTH) + 1, calendar.get(DAY_OF_MONTH), getTimezone());
     }
 
-
     private XMLGregorianCalendar getXMLGregorianCalendarTime(Long millis) throws DatatypeConfigurationException {
-        final GregorianCalendar calendar = new GregorianCalendar(timeZone);
-        calendar.setTimeInMillis(millis);
+        final GregorianCalendar calendar = createGregorianCalendar(millis);
         return DatatypeFactory.newInstance().newXMLGregorianCalendarTime(calendar.get(Calendar.HOUR_OF_DAY), calendar.get(MINUTE), calendar.get(SECOND), calendar.get(MILLISECOND), getTimezone());
     }
 
-
     private XMLGregorianCalendar getXMLGregorianCalendarDateTime(Long millis) throws DatatypeConfigurationException {
-        final GregorianCalendar calendar = new GregorianCalendar(timeZone);
-        calendar.setTimeInMillis(millis);
+        final GregorianCalendar calendar = createGregorianCalendar(millis);
         return DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
     }
 
+    private GregorianCalendar createGregorianCalendar(Long millis) {
+        final GregorianCalendar calendar;
+        if (timeZone == null) {
+            calendar = new GregorianCalendar();
+        } else {
+            calendar = new GregorianCalendar(timeZone);
+        }
+        calendar.setTimeInMillis(millis);
+        return calendar;
+    }
 }

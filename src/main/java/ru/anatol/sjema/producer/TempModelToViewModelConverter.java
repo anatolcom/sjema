@@ -157,32 +157,37 @@ public class TempModelToViewModelConverter {
         final Map<String, String> rootElementIdMap = new HashMap<>();
 
         // Инициализация идентификаторов элементов
-        for (TempElement tElement : tempModel.getElementSet()) {
-            final String elementName = tElement.getNameId().getName();
+        for (TempElement tempElement : tempModel.getElementSet()) {
+            final String elementName = tempElement.getNameId().getName();
             final String elementId = idNumerator.getNumbered(elementName + ELEMENT);
-            idManager.registerId(tElement.getId(), TempIdentifier.Mode.ELEMENT, elementId, tElement);
+            idManager.registerId(tempElement.getId(), TempIdentifier.Mode.ELEMENT, elementId, tempElement);
 //            idManager.registerId(tElement.getNameId(), TempIdentifier.Mode.ELEMENT_NAME, elementId, tElement);
-            if (tElement.isRoot()
-                    && viewModel.getTargetNamespace().equals(tElement.getNameId().getNamespace())
-                    && TempElement.Mode.ELEMENT.equals(tElement.getMode())) {
+            if (tempElement.isRoot()
+                    && viewModel.getTargetNamespace().equals(tempElement.getNameId().getNamespace())
+                    && TempElement.Mode.ELEMENT.equals(tempElement.getMode())) {
                 rootElementIdMap.put(elementName, elementId);
             }
         }
 
         // Инициализация идентификаторов типов
-        for (TempType tType : tempModel.getTypeSet()) {
+        for (TempType tempType : tempModel.getTypeSet()) {
             final String typeId;
-            if (tType.getName().endsWith(TYPE)) {
-                typeId = idNumerator.getNumbered(tType.getName());
+            if (tempType.getName() == null) {
+                typeId = idNumerator.getNumbered("unnamed" + TYPE);
+            } else if (tempType.getName().endsWith(TYPE)) {
+                typeId = idNumerator.getNumbered(tempType.getName());
             } else {
-                typeId = idNumerator.getNumbered(tType.getName() + TYPE);
+                typeId = idNumerator.getNumbered(tempType.getName() + TYPE);
             }
-            idManager.registerId(tType.getNameId(), TempIdentifier.Mode.TYPE_NAME, typeId, tType);
+            idManager.registerId(tempType.getNameId(), TempIdentifier.Mode.TYPE_NAME, typeId, tempType);
+
+//            tempTypeMap.put(tempType.getNameId(), tempType);
         }
 
+
         // Инициализация идентификаторов групп
-        for (TempGroup tGroup : tempModel.getGroupSet()) {
-            idManager.registerId(tGroup.getNameId(), TempIdentifier.Mode.GROUP_NAME, null, tGroup);
+        for (TempGroup tempGroup : tempModel.getGroupSet()) {
+            idManager.registerId(tempGroup.getNameId(), TempIdentifier.Mode.GROUP_NAME, null, tempGroup);
         }
 
         viewModel.setStructure(new HashMap<>());

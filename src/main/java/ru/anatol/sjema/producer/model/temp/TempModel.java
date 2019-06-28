@@ -1,15 +1,23 @@
 package ru.anatol.sjema.producer.model.temp;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class TempModel extends TempComment {
 
     private String version;
+    private final List<String> annotation = new ArrayList<>();
     private String targetNamespace;
+    private final Set<TempSchema> schemas = new HashSet<>();
     private final Set<TempElement> elements = new HashSet<>();
     private final Set<TempType> types = new HashSet<>();
     private final Set<TempGroup> groups = new HashSet<>();
-    private Map<String, String> consts = new HashMap<>();
+    private final Map<String, String> consts = new HashMap<>();
 
     private TempElement.Form attributeFormDefault;
     private TempElement.Form elementFormDefault;
@@ -25,12 +33,20 @@ public class TempModel extends TempComment {
         this.version = version;
     }
 
+    public List<String> getAnnotation() {
+        return annotation;
+    }
+
     public String getTargetNamespace() {
         return targetNamespace;
     }
 
     public void setTargetNamespace(String targetNamespace) {
         this.targetNamespace = targetNamespace;
+    }
+
+    public Set<TempSchema> getSchemas() {
+        return schemas;
     }
 
     public TempIdentifier addElement(TempElement element) {

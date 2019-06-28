@@ -6,6 +6,7 @@ import org.w3c.dom.Document;
 import ru.anatol.sjema.converter.data.DataModelToJsonDataConverter;
 import ru.anatol.sjema.converter.view.ViewModelToJsonViewConverter;
 import ru.anatol.sjema.model.data.DataModel;
+import ru.anatol.sjema.printer.TreeModelPrinter;
 import ru.anatol.sjema.producer.model.temp.TempModel;
 import ru.anatol.sjema.model.view.ViewModel;
 import ru.anatol.sjema.printer.DataModelPrinter;
@@ -15,6 +16,7 @@ import ru.anatol.sjema.processor.ViewModelProcessor;
 import ru.anatol.sjema.producer.ProducerException;
 import ru.anatol.sjema.producer.ViewModelProducer;
 import ru.anatol.sjema.producer.XsdSchemaResolver;
+import ru.anatol.sjema.producer.model.tree.TreeModel;
 import ru.anatol.sjema.readers.ViewModelReader;
 import ru.anatol.sjema.readers.XmlDataReader;
 import ru.anatol.sjema.readers.XsdSchemaReader;
@@ -24,6 +26,9 @@ import ru.anatol.sjema.xml.DomUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class TestUtil {
 
@@ -153,5 +158,44 @@ public class TestUtil {
         }
         System.out.println("-------------------------------------");
     }
+
+    public static void printTreeModel(TreeModel treeModel) {
+        System.out.println("-------  T R E E   M O D E L  -------");
+        System.out.println("-------------------------------------");
+        new TreeModelPrinter(treeModel).print(System.out, 0);
+        System.out.println();
+        System.out.println("-------------------------------------");
+    }
+
+    public static String printDateWithDefaultZone(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("yyyy-MM-dd").parse(value);
+        return new SimpleDateFormat("yyyy-MM-dd").format(date);
+    }
+
+    public static String printDate(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("yyyy-MM-ddXXX").parse(value);
+        return new SimpleDateFormat("yyyy-MM-dd").format(date);
+    }
+
+    public static String printTimeWithDefaultZone(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("HH:mm:ss.SSS").parse(value);
+        return new SimpleDateFormat("HH:mm:ss.SSSXXX").format(date);
+    }
+
+    public static String printTime(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("HH:mm:ss.SSSXXX").parse(value);
+        return new SimpleDateFormat("HH:mm:ss.SSSXXX").format(date);
+    }
+
+    public static String printDateTimeWithDefaultZone(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(value);
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(date);
+    }
+
+    public static String printDateTime(String value) throws ParseException {
+        final Date date = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").parse(value);
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(date);
+    }
+
 
 }

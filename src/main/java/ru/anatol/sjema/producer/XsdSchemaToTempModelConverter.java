@@ -48,9 +48,11 @@ import ru.anatol.sjema.producer.model.temp.TempElementRestriction;
 import ru.anatol.sjema.producer.model.temp.TempFacets;
 import ru.anatol.sjema.producer.model.temp.TempFacetsPattern;
 import ru.anatol.sjema.producer.model.temp.TempGroup;
+import ru.anatol.sjema.producer.model.temp.TempGroupAny;
 import ru.anatol.sjema.producer.model.temp.TempGroupRestriction;
 import ru.anatol.sjema.producer.model.temp.TempIdentifier;
 import ru.anatol.sjema.producer.model.temp.TempModel;
+import ru.anatol.sjema.producer.model.temp.TempSchema;
 import ru.anatol.sjema.producer.model.temp.TempType;
 import ru.anatol.sjema.producer.model.temp.TempTypeReference;
 
@@ -111,7 +113,7 @@ public class XsdSchemaToTempModelConverter {
     public TempModel convert(XsdSchemaResolver xsdSchemaResolver, String schemaLocation) throws ConverterException {
         try {
             XsdSchemas xsdSchemas = new XsdSchemas(xsdSchemaResolver);
-            return toTempModel(xsdSchemas, schemaLocation, null);
+            return toTempModel(xsdSchemas, schemaLocation, null, TempSchema.Mode.ROOT);
         } catch (ConverterException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -128,7 +130,7 @@ public class XsdSchemaToTempModelConverter {
      * @throws ConverterException
      */
 
-    private TempModel toTempModel(XsdSchemas xsdSchemas, String schemaLocation, String parentSchemaId) throws ConverterException {
+    private TempModel toTempModel(XsdSchemas xsdSchemas, String schemaLocation, String parentSchemaId, TempSchema.Mode mode) throws ConverterException {
         Objects.requireNonNull(xsdSchemas, "xsdSchemas is null");
 //        Objects.requireNonNull(schemaLocation, "schemaLocation is null");
 
@@ -136,9 +138,16 @@ public class XsdSchemaToTempModelConverter {
         final Schema schema = xsdSchemas.resolve(schemaLocation, parentSchemaId);
         Objects.requireNonNull(schema, "schema is null");
 
-        TempModel model = new TempModel();
+        final TempModel model = new TempModel();
 
         model.setTargetNamespace(schema.getTargetNamespace());
+
+        final TempSchema tempSchema = new TempSchema();
+        tempSchema.setName(toSchemaName(schemaLocation));
+        tempSchema.setHash(schemaId);
+        tempSchema.setMode(mode);
+        tempSchema.setTargetNamespace(schema.getTargetNamespace());
+        model.getSchemas().add(tempSchema);
 
         model.getConsts().put("lang", schema.getLang());
         model.setVersion(schema.getVersion());
@@ -182,7 +191,7 @@ public class XsdSchemaToTempModelConverter {
                 continue;
             }
             if (item instanceof Annotation) {
-                model.addComment("#Annotation : ???");
+                model.getAnnotation().addAll(readAnnotation((Annotation) item));
                 continue;
             }
             model.addComment("#" + item.getClass().getSimpleName() + "___iir___???");
@@ -230,6 +239,17 @@ public class XsdSchemaToTempModelConverter {
         return model;
     }
 
+    private String toSchemaName(String schemaLocation) {
+        if (schemaLocation == null) {
+            return null;
+        }
+        int lastIndex = schemaLocation.lastIndexOf("/");
+        if (lastIndex == -1) {
+            return schemaLocation;
+        }
+        return schemaLocation.substring(lastIndex + 1);
+    }
+
     //---------------------------------------------------------------------------
     public void readInclude(TempModel model, XsdSchemas xsdSchemas, String parentSchemaId, Include xsdInclude) throws ConverterException {
         Objects.requireNonNull(xsdInclude, "xsdInclude is null");
@@ -241,7 +261,7 @@ public class XsdSchemaToTempModelConverter {
         if (xsdSchemas.resolved(schemaLocation, parentSchemaId)) {
             return;
         }
-        TempModel includeModel = toTempModel(xsdSchemas, schemaLocation, parentSchemaId);
+        TempModel includeModel = toTempModel(xsdSchemas, schemaLocation, parentSchemaId, TempSchema.Mode.INCLUDE);
 
         if (!includeModel.getTargetNamespace().equals(namespace)) {
             throw new ConverterException("include schema \"" + schemaLocation + "\" failure, because targetNamespace \"" + namespace + "\" mismatch targetNamespace \"" + includeModel.getTargetNamespace() + "\" of included schema");
@@ -277,13 +297,15 @@ public class XsdSchemaToTempModelConverter {
         if (xsdSchemas.resolved(schemaLocation, parentSchemaId)) {
             return;
         }
-        TempModel importModel = toTempModel(xsdSchemas, schemaLocation, parentSchemaId);
+        TempModel importModel = toTempModel(xsdSchemas, schemaLocation, parentSchemaId, TempSchema.Mode.IMPORT);
 
         if (!importModel.getTargetNamespace().equals(namespace)) {
             throw new ConverterException("import schema \"" + schemaLocation + "\" failure, because import namespace \"" + namespace + "\" mismatch targetNamespace \"" + importModel.getTargetNamespace() + "\" of imported schema");
         }
 
         LOGGER.debug("import schemaLocation: \"{}\", namespace: \"{}\"", schemaLocation, namespace);
+
+        model.getSchemas().addAll(importModel.getSchemas());
 
         for (TempType type : importModel.getTypeSet()) {
 //            if (namespace.equals(type.getNameId().getNamespace())) {
@@ -699,7 +721,8 @@ public class XsdSchemaToTempModelConverter {
         }
 
         if (attributeGroup.getAnyAttribute() != null) {
-            tempGroup.addComment("#AnyAttribute : " + toString(attributeGroup.getAnyAttribute()));
+            TempGroup group = readAnyAttribute(model, attributeGroup.getAnyAttribute());
+            tempGroup.getIds().add(model.addGroup(group));
         }
 
         return tempGroup;
@@ -842,16 +865,60 @@ public class XsdSchemaToTempModelConverter {
                     tempGroup.addComment(element.getName().getLocalPart() + " : " + element.getValue().getClass().getSimpleName() + "___???");
                     continue;
                 }
-//            if ("Any".equals(item.getClass().getSimpleName())) {
                 if (item instanceof Any) {
-                    //Any any = (Any)item;
-                    tempGroup.addComment("#Any : ???");
+                    final TempGroup groupAny = readAny(model, (Any) item);
+                    tempGroup.getIds().add(model.addGroup(groupAny));
                     continue;
                 }
                 tempGroup.addComment("#Particle : " + item.toString() + " - " + item.getClass().getSimpleName() + "___???");
             }
 
         }
+
+        return tempGroup;
+    }
+
+    //---------------------------------------------------------------------------
+
+    private TempGroup readAny(TempModel model, Any any) {
+        final TempGroup tempGroup = new TempGroup(TempGroup.Mode.ANY);
+
+        tempGroup.setId(createIdentifier(TempIdentifier.Mode.GROUP, any.getId(), model.getTargetNamespace()));
+        tempGroup.setNameId(createIdentifier(TempIdentifier.Mode.GROUP_NAME, null, model.getTargetNamespace()));
+
+        tempGroup.setName(null);
+        tempGroup.setAnnotation(readAnnotation(any.getAnnotation()));
+
+        tempGroup.setRestriction(new TempGroupRestriction());
+
+        tempGroup.getRestriction().setMinOccurs(any.getMinOccurs().toString());
+        tempGroup.getRestriction().setMaxOccurs(any.getMaxOccurs().toString());
+
+        tempGroup.setAny(new TempGroupAny());
+        tempGroup.getAny().setProcessContents(any.getProcessContents());
+        tempGroup.getAny().setNamespaces(any.getNamespace());
+
+        return tempGroup;
+    }
+
+    //---------------------------------------------------------------------------
+    private TempGroup readAnyAttribute(TempModel model, Wildcard anyAttribute) {
+        final TempGroup tempGroup = new TempGroup(TempGroup.Mode.ANY_ATTRIBUTES);
+
+        tempGroup.setId(createIdentifier(TempIdentifier.Mode.GROUP, anyAttribute.getId(), model.getTargetNamespace()));
+        tempGroup.setNameId(createIdentifier(TempIdentifier.Mode.GROUP_NAME, null, model.getTargetNamespace()));
+
+        tempGroup.setName(null);
+        tempGroup.setAnnotation(readAnnotation(anyAttribute.getAnnotation()));
+
+        tempGroup.setRestriction(new TempGroupRestriction());
+        //TODO проверить значения по умолчанию
+        tempGroup.getRestriction().setMinOccurs("0");
+        tempGroup.getRestriction().setMaxOccurs("1");
+
+        tempGroup.setAny(new TempGroupAny());
+        tempGroup.getAny().setProcessContents(anyAttribute.getProcessContents());
+        tempGroup.getAny().setNamespaces(anyAttribute.getNamespace());
 
         return tempGroup;
     }
@@ -874,11 +941,8 @@ public class XsdSchemaToTempModelConverter {
         tempType.setId(createIdentifier(TempIdentifier.Mode.TYPE, simpleType.getId(), model.getTargetNamespace()));
         tempType.setNameId(createIdentifier(TempIdentifier.Mode.TYPE_NAME, simpleType.getName(), model.getTargetNamespace()));
 
-        if (simpleType.getName() != null) {
-            tempType.setName(simpleType.getName());
-        } else {
-            tempType.setName("simpleType");
-        }
+        tempType.setName(simpleType.getName());
+
         tempType.setAnnotation(readAnnotation(simpleType.getAnnotation()));
 
         if (!simpleType.getFinal().isEmpty()) {
@@ -927,11 +991,8 @@ public class XsdSchemaToTempModelConverter {
         tType.setId(createIdentifier(TempIdentifier.Mode.TYPE, complexType.getId(), model.getTargetNamespace()));
         tType.setNameId(createIdentifier(TempIdentifier.Mode.TYPE_NAME, complexType.getName(), model.getTargetNamespace()));
 
-        if (complexType.getName() != null) {
-            tType.setName(complexType.getName());
-        } else {
-            tType.setName("complexType");
-        }
+        tType.setName(complexType.getName());
+
         tType.setAnnotation(readAnnotation(complexType.getAnnotation()));
 
         if (!complexType.getBlock().isEmpty()) {
@@ -1002,7 +1063,8 @@ public class XsdSchemaToTempModelConverter {
         tType.setId(createIdentifier(TempIdentifier.Mode.TYPE, extensionType.getId(), model.getTargetNamespace()));
         tType.setNameId(createIdentifier(TempIdentifier.Mode.TYPE_NAME, null, model.getTargetNamespace()));
 
-        tType.setName("extensionType");
+        tType.setName(null);
+//        tType.setName("extensionType");
         tType.setAnnotation(readAnnotation(extensionType.getAnnotation()));
 
         tType.setReference(new TempTypeReference());
@@ -1040,7 +1102,8 @@ public class XsdSchemaToTempModelConverter {
         }
 
         if (extensionType.getAnyAttribute() != null) {
-            tType.addComment("#AnyAttribute : " + toString(extensionType.getAnyAttribute()));
+            TempGroup group = readAnyAttribute(model, extensionType.getAnyAttribute());
+            contentGroup.getIds().add(model.addGroup(group));
         }
 
         return tType;
@@ -1062,7 +1125,8 @@ public class XsdSchemaToTempModelConverter {
         tType.setId(createIdentifier(TempIdentifier.Mode.TYPE, restrictionType.getId(), model.getTargetNamespace()));
         tType.setNameId(createIdentifier(TempIdentifier.Mode.TYPE_NAME, null, model.getTargetNamespace()));
 
-        tType.setName("restrictionType");
+        tType.setName(null);
+
         tType.setAnnotation(readAnnotation(restrictionType.getAnnotation()));
 
         tType.setReference(new TempTypeReference());
@@ -1107,7 +1171,8 @@ public class XsdSchemaToTempModelConverter {
         }
 
         if (restrictionType.getAnyAttribute() != null) {
-            tType.addComment("#AnyAttribute : " + toString(restrictionType.getAnyAttribute()));
+            TempGroup group = readAnyAttribute(model, restrictionType.getAnyAttribute());
+            contentGroup.getIds().add(model.addGroup(group));
         }
         return tType;
     }
@@ -1152,7 +1217,7 @@ public class XsdSchemaToTempModelConverter {
             if (sb.length() > 0) sb.append(", ");
             if (item instanceof Keyref)//???
             {
-                sb.append("Keyref");
+                sb.append("#Keyref");
                 continue;
             }
             if (item instanceof JAXBElement)//???
@@ -1393,13 +1458,6 @@ public class XsdSchemaToTempModelConverter {
         return new StringBuilder()
                 .append("{").append(qName.getNamespaceURI()).append("}").append(qName.getLocalPart())
 //                .append(qName.getPrefix()).append(":").append(qName.getLocalPart())
-                .toString();
-    }
-
-    private static String toString(Wildcard wildcard) {
-        Objects.requireNonNull(wildcard, "wildcard is null");
-        return new StringBuilder()
-                .append(wildcard.getProcessContents()).append("_").append(toString(wildcard.getNamespace())).append("_???")
                 .toString();
     }
 

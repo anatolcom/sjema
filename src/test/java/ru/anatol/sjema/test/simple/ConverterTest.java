@@ -22,10 +22,12 @@ import ru.anatol.sjema.mapper.standard.xmlDateTimeMapper.XmlDateFormatConst;
 import ru.anatol.sjema.mapper.standard.xmlDateTimeMapper.XmlDateFormatProducer;
 import ru.anatol.sjema.model.data.DataModel;
 import ru.anatol.sjema.model.view.ViewModel;
+import ru.anatol.sjema.producer.TempModelToTreeModelConverter;
 import ru.anatol.sjema.producer.TempModelToViewModelConverter;
 import ru.anatol.sjema.producer.XsdSchemaResolver;
 import ru.anatol.sjema.producer.XsdSchemaToTempModelConverter;
 import ru.anatol.sjema.producer.model.temp.TempModel;
+import ru.anatol.sjema.producer.model.tree.TreeModel;
 import ru.anatol.sjema.simple.processor.MessageProcessor;
 import ru.anatol.sjema.validator.ViewModelValidator;
 import ru.anatol.sjema.xml.DomUtil;
@@ -34,8 +36,10 @@ import ru.anatol.sjema.xml.path.parser.PathParser;
 import ru.anatol.sjema.xml.path.parser.PathPrinter;
 
 import java.io.File;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,19 +90,37 @@ public class ConverterTest {
 
     @Test
     public void xmlDateTime() throws Exception {
-        Map<String, String> map = new HashMap<>();
-        map.put(XmlDateFormatConst.PARAM_MODE, XmlDateFormatConst.PARAM_MODE_DATE);
-//        map.put(XmlDateFormatConst.PARAM_MODE, XmlDateFormatConst.PARAM_MODE_TIME);
-//        map.put(XmlDateFormatConst.PARAM_MODE, XmlDateFormatConst.PARAM_MODE_DATE_TIME);
-//        map.put(XmlDateFormatConst.PARAM_TIME_ZONE_RAW_OFFSET, "0");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE, null, "2000-01-01", TestUtil.printDateWithDefaultZone("2000-01-01"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE, null, "2000-01-01Z", TestUtil.printDate("2000-01-01+00:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE, null, "2000-01-02+10:00", TestUtil.printDate("2000-01-02+10:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE, "0", "2000-01-01Z", "2000-01-01Z");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE, "10800000", "2000-01-01Z", "2000-01-01+03:00");
+
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, null, "18:09:34", TestUtil.printTimeWithDefaultZone("18:09:34.000"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, null, "14:09:34Z", TestUtil.printTime("14:09:34.000+00:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, null, "00:09:34.000+10:00", TestUtil.printTime("00:09:34.000+10:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, "0", "14:09:34.000Z", "14:09:34.000Z");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, "3600000", "14:09:34.000Z", "15:09:34.000+01:00");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, "10800000", "14:09:34.000Z", "17:09:34.000+03:00");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, "14400000", "14:09:34.000Z", "18:09:34.000+04:00");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_TIME, "14400000", "18:09:34.000+04:00", "18:09:34.000+04:00");
+
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE_TIME, null, "2000-01-01T18:09:34", TestUtil.printDateTimeWithDefaultZone("2000-01-01T18:09:34.000"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE_TIME, null, "2000-01-01T14:09:34.000Z", TestUtil.printDateTime("2000-01-01T14:09:34.000+00:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE_TIME, null, "2000-01-02T00:09:34.000+10:00", TestUtil.printDateTime("2000-01-02T00:09:34.000+10:00"));
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE_TIME, "0", "2000-01-01T14:09:34.000Z", "2000-01-01T14:09:34.000Z");
+        xmlDateTime(XmlDateFormatConst.PARAM_MODE_DATE_TIME, "14400000", "2000-01-01T17:09:34.000+03:00", "2000-01-01T18:09:34.000+04:00");
+    }
+
+
+    public void xmlDateTime(String paramMode, String rawOffset, String text, String result) throws Exception {
+        final Map<String, String> map = new HashMap<>();
+        map.put(XmlDateFormatConst.PARAM_MODE, paramMode);
+        if (rawOffset != null) {
+            map.put(XmlDateFormatConst.PARAM_TIME_ZONE_RAW_OFFSET, rawOffset);
+        }
         XmlDateFormatProducer producer = new XmlDateFormatProducer();
         Mapper mapper = producer.produce(new MapperParams(map));
-//        String text = "18:09:34";
-//        String text = "18:09:34.000Z";
-//        String text = "18:09:34.000+04:00";
-//        String text = "2000-01-01T18:09:34.000+04:00";
-        String text = "2000-01-01";
-//        String text = "2000-01-01Z";
         Document document = DomUtil.createDocument();
         Element element = DomUtil.appendNode(document, "time", text);
         LOGGER.debug(element.getTextContent());
@@ -106,17 +128,27 @@ public class ConverterTest {
         LOGGER.debug("ms: {}", value);
         mapper.setValue(document.getDocumentElement(), value);
         LOGGER.debug(element.getTextContent());
+        LOGGER.debug("----------------------");
+        Assert.assertEquals(result, element.getTextContent());
     }
 
     @Test
-    public void xsd_xsd() throws Exception {
+    public void xsd_viewModel_xsd() throws Exception {
         String path = "xsd";
         String xsdFilename = "XMLSchema.xsd";
 
-        xsd(path, xsdFilename, true);
+        xsdToViewModel(path, xsdFilename, true);
     }
 
-    private void xsd(String path, String schemaLocation, boolean debug) throws Exception {
+    @Test
+    public void xsd_treeModel_xsd() throws Exception {
+        String path = "xsd";
+        String xsdFilename = "XMLSchema.xsd";
+
+        xsdToTreeModel(path, xsdFilename, true);
+    }
+
+    private void xsdToViewModel(String path, String schemaLocation, boolean debug) throws Exception {
 
         final XsdSchemaResolver xsdSchemaResolver = new ResourceXsdResolver(path);
 
@@ -133,6 +165,19 @@ public class ConverterTest {
         }
 
         ViewModelValidator.validate(viewModel);
+    }
+
+    private void xsdToTreeModel(String path, String schemaLocation, boolean debug) throws Exception {
+
+        final XsdSchemaResolver xsdSchemaResolver = new ResourceXsdResolver(path);
+
+        final TempModel tempModel = new XsdSchemaToTempModelConverter().convert(xsdSchemaResolver, schemaLocation);
+        if (debug) {
+            TestUtil.printTempModel(tempModel);
+        }
+
+        final TreeModel treeModel = new TempModelToTreeModelConverter().convert(tempModel);
+        TestUtil.printTreeModel(treeModel);
     }
 
     private static List<String> getRootElements(Schema schema) {
