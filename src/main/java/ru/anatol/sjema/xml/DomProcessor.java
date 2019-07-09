@@ -22,12 +22,15 @@ import ru.anatol.sjema.xml.path.operator.OperatorEquals;
 import ru.anatol.sjema.xml.path.parser.ParserException;
 import ru.anatol.sjema.xml.path.parser.PathParser;
 import ru.anatol.sjema.xml.path.parser.PathPrinter;
+import ru.anatol.sjema.xml.path.step.Axis;
 import ru.anatol.sjema.xml.path.step.Step;
 import ru.anatol.sjema.xml.path.step.StepContext;
 import ru.anatol.sjema.xml.path.step.StepRoot;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -140,89 +143,12 @@ public class DomProcessor {
         try {
             Node node = target;
             for (Step step : path.getSteps()) {
-
                 if (step instanceof StepRoot) {
-                    if (node instanceof Document) {
-                        continue;
-                    }
-                    node = node.getOwnerDocument();
+                    node = processStepRoot(node);
                     continue;
                 }
-
                 if (step instanceof StepContext) {
-                    StepContext stepContext = (StepContext) step;
-                    Function function = stepContext.getFunction();
-                    switch (stepContext.getAxis()) {
-                        case PARENT:
-                            node = node.getParentNode();
-                            if (node == null) {
-                                throw new PathException("parent node not exists");
-                            }
-                            //condition
-                            break;
-                        case SELF:
-                            //condition
-                            break;
-                        case CHILD:
-                            if (function instanceof FunctionNodeName) {
-                                FunctionNodeName functionNodeName = (FunctionNodeName) function;
-                                ConstantNodeName nodeName = functionNodeName.getNodeName();
-                                final String namespaceUri;
-                                if (nodeName.getPrefix() != null) {
-                                    namespaceUri = namespaces.getNamespaceURI(nodeName.getPrefix());
-                                } else {
-                                    namespaceUri = null;
-                                }
-                                switch (createMode) {
-                                    case ALWAYS:
-                                        node = appendElementNS(node, namespaceUri, nodeName.getPrefix(), nodeName.getName());
-                                        break;
-                                    case IF_NOT_EXISTS:
-                                        NodeList nodeList = findElementsNS(node, namespaceUri, nodeName.getName());
-                                        if (nodeList != null && nodeList.getLength() > 0) {
-                                            node = nodeList.item(nodeList.getLength() - 1);
-                                        } else {
-                                            node = appendElementNS(node, namespaceUri, nodeName.getPrefix(), nodeName.getName());
-                                        }
-                                        break;
-                                    default:
-                                        throw new PathException("unknown create mode " + createMode);
-                                }
-                            } else {
-                                throw new PathException("unsupported function " + function.name());
-                            }
-                            //condition
-                            break;
-                        case ATTRIBUTE:
-                            if (function instanceof FunctionNodeName) {
-                                FunctionNodeName functionNodeName = (FunctionNodeName) function;
-                                ConstantNodeName nodeName = functionNodeName.getNodeName();
-                                final String namespaceUri;
-                                if (nodeName.getPrefix() != null) {
-                                    namespaceUri = namespaces.getNamespaceURI(nodeName.getPrefix());
-                                } else {
-                                    namespaceUri = null;
-                                }
-                                Attr attr = findAttrNS(node, namespaceUri, nodeName.getName());
-                                if (attr != null) {
-                                    node = attr;
-                                } else {
-                                    node = appendAttrNS(node, namespaceUri, nodeName.getName());
-                                }
-                            } else {
-                                throw new PathException("unsupported function " + function.name());
-                            }
-                            //condition
-                            break;
-                        default:
-
-                    }
-
-                    if (stepContext.getConditions() != null) {
-                        for (Operation operation : stepContext.getConditions()) {
-                            forceCondition(node, operation, createMode);
-                        }
-                    }
+                    node = processStepContext(node, (StepContext) step, createMode);
                     continue;
                 }
             }
@@ -230,8 +156,90 @@ public class DomProcessor {
         } catch (DomException ex) {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             PathPrinter.printOperation(new PrintStream(outputStream), path);
-            throw new PathException("path \"" + outputStream.toString() + "\" can not be resolved", ex);
+            throw new PathException("path \"" + outputStream.toString() + "\" can not be resolved for node: \"" + target.getNodeName() + "\", because: " + ex.getMessage(), ex);
         }
+    }
+
+    private Node processStepRoot(Node node) {
+        if (node instanceof Document) {
+            return node;
+        }
+        return node.getOwnerDocument();
+    }
+
+    private Node processStepContext(Node node, StepContext stepContext, CreateMode createMode) throws DomException, PathException {
+        node = processAxisFunction(node, stepContext.getAxis(), stepContext.getFunction(), createMode);
+        if (stepContext.getConditions() != null) {
+            for (Operation operation : stepContext.getConditions()) {
+                forceCondition(node, operation, createMode);
+            }
+        }
+        return node;
+    }
+
+    private Node processAxisFunction(Node node, Axis axis, Function function, CreateMode createMode) throws DomException, PathException {
+        switch (axis) {
+            case PARENT:
+                return processAxisParent(node);
+            case SELF:
+                return node;
+            case CHILD:
+                return processAxisChild(node, function, createMode);
+            case ATTRIBUTE:
+                return processAxisAttribute(node, function);
+            default:
+                throw new UnsupportedOperationException("unknown axis: " + axis.name());
+        }
+    }
+
+    private Node processAxisParent(Node node) throws DomException, PathException {
+        if (node.getParentNode() == null) {
+            throw new PathException("parent node not exists");
+        }
+        return node.getParentNode();
+    }
+
+    private Node processAxisChild(Node node, Function function, CreateMode createMode) throws DomException, PathException {
+        if (!(function instanceof FunctionNodeName)) {
+            throw new PathException("unsupported function " + function.name());
+        }
+        final FunctionNodeName functionNodeName = (FunctionNodeName) function;
+        final ConstantNodeName nodeName = functionNodeName.getNodeName();
+        final String namespaceUri = getNamespaceURI(nodeName.getPrefix());
+        switch (createMode) {
+            case ALWAYS:
+                return appendElementNS(node, namespaceUri, nodeName.getPrefix(), nodeName.getName());
+            case IF_NOT_EXISTS:
+                final List<Node> nodeList = findChildElementsNS(node, namespaceUri, nodeName.getName());
+                if (nodeList != null && !nodeList.isEmpty()) {
+                    return nodeList.get(nodeList.size() - 1);
+                } else {
+                    return appendElementNS(node, namespaceUri, nodeName.getPrefix(), nodeName.getName());
+                }
+            default:
+                throw new PathException("unknown create mode " + createMode);
+        }
+    }
+
+    private Node processAxisAttribute(Node node, Function function) throws DomException, PathException {
+        if (!(function instanceof FunctionNodeName)) {
+            throw new PathException("unsupported function " + function.name());
+        }
+        final FunctionNodeName functionNodeName = (FunctionNodeName) function;
+        final ConstantNodeName nodeName = functionNodeName.getNodeName();
+        final String namespaceUri = getNamespaceURI(nodeName.getPrefix());
+        Attr attr = findAttrNS(node, namespaceUri, nodeName.getName());
+        if (attr != null) {
+            return attr;
+        }
+        return appendAttrNS(node, namespaceUri, nodeName.getName());
+    }
+
+    private String getNamespaceURI(String prefix) {
+        if (prefix == null) {
+            return null;
+        }
+        return namespaces.getNamespaceURI(prefix);
     }
 
     private void forceCondition(Node target, Operation operation, CreateMode createMode) throws PathException {
@@ -280,7 +288,7 @@ public class DomProcessor {
                 }
                 doc = (Document) target;
             }
-            Element element = doc.createElementNS(uri, name);
+            final Element element = doc.createElementNS(uri, name);
             element.setPrefix(prefix);
             target.appendChild(element);
             return element;
@@ -299,5 +307,30 @@ public class DomProcessor {
             return ((Document) target).getElementsByTagNameNS(uri, name);
         }
         throw new PathException("target node for finding elements is not document or element");
+    }
+
+    public static List<Node> findChildElementsNS(Node target, String uri, String name) throws DomException, PathException {
+        Objects.requireNonNull(target, "target is null");
+        Objects.requireNonNull(name, "name is null");
+        final NodeList childNodes = target.getChildNodes();
+        if (childNodes == null) {
+            return Collections.EMPTY_LIST;
+        }
+        final List<Node> nodes = new ArrayList<>(childNodes.getLength());
+        for (int index = 0; index < childNodes.getLength(); index++) {
+            final Node node = childNodes.item(index);
+            if (compare(name, node.getLocalName()) && compare(uri, node.getNamespaceURI())) {
+                nodes.add(node);
+            }
+        }
+        return nodes;
+    }
+
+    private static boolean compare(String a, String b) {
+        if (a == null) {
+            return b == null;
+        } else {
+            return a.equals(b);
+        }
     }
 }
