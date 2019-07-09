@@ -65,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 public class XsdSchemaToTempModelConverter {
 
@@ -73,6 +72,8 @@ public class XsdSchemaToTempModelConverter {
      * Logger.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(XsdSchemaToTempModelConverter.class);
+
+    private final Numerator idNumerator = new Numerator();
 
     private class XsdSchemas {
 
@@ -1269,9 +1270,28 @@ public class XsdSchemaToTempModelConverter {
 
     private TempIdentifier createIdentifier(TempIdentifier.Mode mode, String name, String namespace) {
         if (name == null) {
-            name = UUID.randomUUID().toString();
+            name = idNumerator.getNumbered("#" + getModeName(mode));
         }
         return new TempIdentifier(mode, namespace, name);
+    }
+
+    private String getModeName(TempIdentifier.Mode mode) {
+        switch (mode) {
+            case TYPE:
+                return "Type";
+            case ELEMENT:
+                return "Element";
+            case GROUP:
+                return "Group";
+            case TYPE_NAME:
+                return "TypeName";
+            case ELEMENT_NAME:
+                return "ElementName";
+            case GROUP_NAME:
+                return "GroupName";
+            default:
+                throw new UnsupportedOperationException("unknown mode: " + mode.name());
+        }
     }
 
     //---------------------------------------------------------------------------
@@ -1323,12 +1343,22 @@ public class XsdSchemaToTempModelConverter {
         List<String> list = new ArrayList<>(documentation.getContent().size());
         for (Object item : documentation.getContent()) {
             if (item instanceof String) {
-                list.add(((String) item).trim());
+                list.add(normalizeDocumentationContent((String) item));
                 continue;
             }
             list.add("#Documentation : " + item.getClass().getSimpleName());
         }
         return String.join(", ", list);
+    }
+
+    private String normalizeDocumentationContent(String content) {
+        return content.trim()
+                .replaceAll(" {1,}", " ")
+                .replaceAll("\n ", "\n")
+                .replaceAll(" \n", "\n")
+                .replaceAll("(\n){2,}", "\n")
+                .replaceAll("^\n", "")
+                .replaceAll("\n$", "");
     }
 
     //---------------------------------------------------------------------------
