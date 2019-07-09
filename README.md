@@ -68,9 +68,6 @@
 - **mappers** : object - [маперы][view/mappers]
   - **[id]** : object - [мапер][view/mapper]. **id** - название мапера.
     - **class** : string - класс мапера
-      допустимые варианты значений:
-        "XmlDateFormat" - форматированное значение даты и время в формате XML
-        "DateFormat" - форматированное значение даты и время
     - **params** : object - перечень параметров зависит от класса
       - **[name]** : string - значение параметра. **name** - название параметра
 - **validation** : object - [валидация][view/validation]
