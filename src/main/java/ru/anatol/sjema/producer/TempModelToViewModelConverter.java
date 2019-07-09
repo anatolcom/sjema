@@ -32,8 +32,6 @@ import ru.anatol.sjema.producer.standard.StandardViewWidgetProducer;
 import ru.anatol.sjema.xml.Namespaces;
 
 import java.math.BigInteger;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -507,9 +505,33 @@ public class TempModelToViewModelConverter {
                 }
             }
 
+            //TODO в content может быть несколько одноименных элементов, только несколько первых могут быть обязательными и только последний из них может быть повторяющимся
+            prepareViewContent(viewContent);
+
             return viewType;
         } catch (Exception ex) {
             throw new ConverterException("convert type: " + tempType.getNameId() + " failure, because: " + ex.getMessage(), ex);
+        }
+    }
+
+    private void prepareViewContent(ViewContent viewContent) throws ConverterException {
+        if (viewContent == null || viewContent.getElementIds() == null) {
+            return;
+        }
+        final Map<String, Integer> countMap = new HashMap<>();
+        for (String elementId : viewContent.getElementIds()) {
+            final ViewElement viewElement = viewModel.getElements().get(elementId);
+            final Integer count = countMap.getOrDefault(viewElement.getPath(), 0);
+            countMap.put(viewElement.getPath(), count + 1);
+        }
+        for (Map.Entry<String, Integer> entry : countMap.entrySet()) {
+            if (!".".equals(entry.getKey()) && entry.getValue() > 1) {
+                throw new ConverterException("convert content: ["
+                        + String.join(", ", viewContent.getElementIds())
+                        + "] failure, because: path: \""
+                        + entry.getKey()
+                        + "\" not unique");
+            }
         }
     }
 
