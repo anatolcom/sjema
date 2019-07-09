@@ -6,8 +6,8 @@
 
     <groupId>ru.anatol</groupId>
     <artifactId>sjema</artifactId>
-    <version>1.0.0</version>
-    <name>sjema-SNAPSHOT</name>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>sjema</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
